@@ -1,5 +1,8 @@
 #include <SDL2/SDL.h>
 
+#define INITIAL_WIDTH  640
+#define INITIAL_HEIGHT 480
+
 #define SHOULD_QUIT    1
 #define SHOULD_RENDER  2
 
@@ -53,9 +56,23 @@ int main(int argc, char **argv) {
         if ((flags & SHOULD_RENDER) == 0 || (flags & SHOULD_QUIT))
         	continue;
 
+		int sW, sH;
+        SDL_GetWindowSize(window, &sW, &sH);
+        SDL_Surface *surface = SDL_GetWindowSurface(window);
+        SDL_LockSurface(surface);
+
 		scroll(topNav);
 		scroll(sideNav);
 		scroll(text);
 		draw();
+
+		SDL_UnlockSurface(surface);
+        SDL_UpdateWindowSurface(window);
+
 		flags = 0;
     }
+
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 0;
+}
