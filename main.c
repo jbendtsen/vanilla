@@ -26,50 +26,50 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-	int flags = SHOULD_RENDER;
-	while ((flags & SHOULD_QUIT) == 0) {
-		// TODO: some logic here to set SHOULD_RENDER if something else changed
-		//       e.g. new file or menu opened
+    int flags = SHOULD_RENDER;
+    while ((flags & SHOULD_QUIT) == 0) {
+        // TODO: some logic here to set SHOULD_RENDER if something else changed
+        //       e.g. new file or menu opened
 
         SDL_Event event = {0};
         while ((flags & SHOULD_QUIT) == 0) {
-        	if (!SDL_PollEvent(&event)) {
-        		if (flags)
-        			break;
-        		if (!SDL_WaitEvent(&event)) {
-        			flags |= SHOULD_QUIT;
-        			break;
-    			}
-    		}
-        	switch (event.type) {
-    		case SDL_QUIT:
-    			flags |= SHOULD_QUIT;
-    			break;
-			case SDL_MOUSEMOTION:
-			case SDL_MOUSEBUTTONDOWN:
-			case SDL_MOUSEBUTTONUP:
-			case SDL_KEYDOWN:
-				flags |= SHOULD_RENDER;
-				break;
-        	}
+            if (!SDL_PollEvent(&event)) {
+                if (flags)
+                    break;
+                if (!SDL_WaitEvent(&event)) {
+                    flags |= SHOULD_QUIT;
+                    break;
+                }
+            }
+            switch (event.type) {
+            case SDL_QUIT:
+                flags |= SHOULD_QUIT;
+                break;
+            case SDL_MOUSEMOTION:
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP:
+            case SDL_KEYDOWN:
+                flags |= SHOULD_RENDER;
+                break;
+            }
         }
         if ((flags & SHOULD_RENDER) == 0 || (flags & SHOULD_QUIT))
-        	continue;
+            continue;
 
-		int sW, sH;
+        int sW, sH;
         SDL_GetWindowSize(window, &sW, &sH);
         SDL_Surface *surface = SDL_GetWindowSurface(window);
         SDL_LockSurface(surface);
 
-		scroll(topNav);
-		scroll(sideNav);
-		scroll(text);
-		draw();
+        scroll(topNav);
+        scroll(sideNav);
+        scroll(text);
+        draw();
 
-		SDL_UnlockSurface(surface);
+        SDL_UnlockSurface(surface);
         SDL_UpdateWindowSurface(window);
 
-		flags = 0;
+        flags = 0;
     }
 
     SDL_DestroyWindow(window);

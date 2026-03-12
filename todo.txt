@@ -1,0 +1,19 @@
+file.c:
+- load/save files
+- index newlines
+- list folders
+
+util.c:
+- hashmap
+- vector
+- other random things
+
+render.c:
+- all drawing
+- handle user input while drawing
+- only source file that uses FreeType2
+
+main.c:
+- main loop
+- handle changes to layout and settings
+- only source file that uses SDL
