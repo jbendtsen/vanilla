@@ -37,7 +37,17 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    AllFontCaches fonts = initAllFonts(&ft);
+    AllFontCaches fonts = {0};
+    if (!initAllFonts(&fonts, &ft)) {
+        SDL_Log("initAllFonts() failed");
+        return 1;
+    }
+
+    Input input = {0};
+    FileView file = {0};
+    Syntax syntax = {0};
+    Layout layout = {0};
+    Theme theme = {0};
 
     int flags = SHOULD_RENDER;
     while ((flags & SHOULD_QUIT) == 0) {
@@ -74,10 +84,20 @@ int main(int argc, char **argv) {
         SDL_Surface *surface = SDL_GetWindowSurface(window);
         SDL_LockSurface(surface);
 
-        scroll(topNav);
-        scroll(sideNav);
-        scroll(text);
-        draw();
+        layout.windowWidth = sW;
+        layout.windowHeight = sH;
+        Rect area = {0, 0, sW, sH};
+
+        draw(
+            &input,
+            &file,
+            &syntax,
+            &layout,
+            &theme,
+            &fonts,
+            &area,
+            surface->pixels
+        );
 
         SDL_UnlockSurface(surface);
         SDL_UpdateWindowSurface(window);

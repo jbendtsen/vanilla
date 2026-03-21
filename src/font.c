@@ -12,7 +12,7 @@
 
 #define OBLIQUE_SLANT 0.25
 
-int initFreetype(Freetype *ft) {
+int initFreetype(Freetype *ft, int dpiX, int dpiY) {
 	if (FT_Init_FreeType(CAST_PTR(ft->library, FT_Library)) != 0) {
 		fprintf(stderr, "Could not initialise libfreetype\n");
 		return 0;
@@ -20,16 +20,24 @@ int initFreetype(Freetype *ft) {
 
 	FT_Stroker_New(
 	    CAST_VALUE(ft->library, FT_Library),
-	    CAST_PTR(ft->stroker, FT_Stroker),
+	    CAST_PTR(ft->stroker, FT_Stroker)
     );
+
+    ft->dpiX = dpiX;
+    ft->dpiY = dpiY;
 	return 1;
 }
 
 FTHandle_Face loadFontFaceFromFile(Freetype *ft, const char *path) {
     FT_Face face;
-    if (FT_New_Face(ft->library, path, 0, &face) != 0) {
+    if (FT_New_Face(
+        CAST_VALUE(ft->library, FT_Library),
+        path,
+        0,
+        &face
+    ) != 0) {
 		fprintf(stderr, "Error loading font \"%s\"\n", path);
-		return NULL;
+		return (FTHandle_Face) {NULL};
 	}
 	return CAST_VALUE(face, FTHandle_Face);
 }
@@ -40,14 +48,60 @@ FTHandle_Face loadFontFaceFromMemory(Freetype *ft, const uint8_t *data, int size
     args.flags = FT_OPEN_MEMORY;
     args.memory_base = data;
     args.memory_size = size;
-    if (FT_Open_Face(ft->library, &args, 0, &face) != 0) {
-		fprintf(stderr, "Error loading font \"%s\"\n", path);
-		return NULL;
+    if (FT_Open_Face(
+        CAST_VALUE(ft->library, FT_Library),
+        &args,
+        0,
+        &face
+    ) != 0) {
+		fprintf(stderr, "Error loading font from memory \"%p:%d\"\n", data, size);
+		return (FTHandle_Face) {NULL};
 	}
 	return CAST_VALUE(face, FTHandle_Face);
 }
 
-void drawGlyph(FontCache *font, GlyphDesc ch, uint8_t *data, int pxGlyphWidth, int pxGlyphHeight) {
+int initFontCache(FontCache *font, Freetype *ft, FTHandle_Face *faceRef, int fontHeight) {
+    *font = (FontCache) {0};
+    font->ft = ft;
+    font->face = faceRef;
+    font->pxGlyphWidth = fontHeight;
+    font->pxGlyphHeight = fontHeight;
+}
+
+int initAllFonts(AllFontCaches *fonts, Freetype *ft) {
+    fonts->codeFontFace = loadFontFaceFromFile(ft, "fonts/code.ttf");
+    fonts->uiFontFace = loadFontFaceFromFile(ft, "fonts/ui.otf");
+    if (!fonts->codeFontFace.ptr || !fonts->uiFontFace.ptr)
+        return 0;
+
+    initFontCache(&fonts->toolBarFont, ft, &fonts->uiFontFace, 20);
+    initFontCache(&fonts->sideNavFont, ft, &fonts->uiFontFace, 30);
+    initFontCache(&fonts->editorFont, ft, &fonts->codeFontFace, 30);
+    return 1;
+}
+
+// 100% transparent = 0, 100% opaque = 256 (not 255)
+uint8_t *getFontGlyph(FontCache *font, GlyphDesc ch) {
+    uint32_t chUint = *(uint32_t*)&ch;
+    KeyValue32 *glyphToOffset = HashTable32_locate(&font->glyphToImageMap, chUint);
+    int imageOffset = 0;
+
+    if (!glyphToOffset || glyphToOffset->key != chUint) {
+        imageOffset = font->atlas.size;
+        HashTable32_put(&font->glyphToImageMap, chUint, imageOffset);
+
+        int glyphArea = font->pxGlyphWidth * font->pxGlyphHeight;
+        ByteVector_resize(&font->atlas, imageOffset + glyphArea);
+        drawGlyph(font, ch, imageOffset);
+    }
+    else {
+        imageOffset = glyphToOffset->value;
+    }
+
+    return &font->atlas.data[imageOffset];
+}
+
+void drawGlyph(FontCache *font, GlyphDesc ch, int dataOffset) {
     ARGB fore, back;
     make_argb(attrs->color, &fore);
     make_argb(background, &back);
@@ -61,11 +115,18 @@ void drawGlyph(FontCache *font, GlyphDesc ch, uint8_t *data, int pxGlyphWidth, i
         FT_Set_Transform(face, &matrix, NULL);
     }
     if (ch.bold)
-        FT_Stroker_Set(font->ft.stroker, 32, FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
+        FT_Stroker_Set(
+            CAST_VALUE(font->ft->stroker, FT_Stroker),
+            32,
+            FT_STROKER_LINECAP_ROUND,
+            FT_STROKER_LINEJOIN_ROUND,
+            0
+        );
 
-    FT_Set_Char_Size(face, 0, (int)(attrs->size * 64), font->ft.dpiX, font->ft.dpiY);
+    FT_Set_Char_Size(face, 0, (int)(attrs->size * 64), font->ft->dpiX, font->ft->dpiY);
 
-    
+    int maxWidth = font->pxGlyphWidth;
+    int maxHeight = font->pxGlyphHeight;
 
     if (ch.italic)
         FT_Set_Transform(face, NULL, NULL);
@@ -78,4 +139,11 @@ void closeFontFace(Freetype *ft, FTHandle_Face face) {
 void closeFreetype(Freetype *ft) {
     FT_Stroker_Done(CAST_VALUE(ft->stroker, FT_Stroker));
 	FT_Done_FreeType(CAST_VALUE(ft->library, FT_Library));
+}
+
+void closeAllFonts(AllFontCaches *fonts) {
+    Freetype *ft = fonts->toolBarFont.ft;
+    closeFontFace(ft, fonts->codeFontFace);
+    closeFontFace(ft, fonts->uiFontFace);
+    closeFreetype(ft);
 }

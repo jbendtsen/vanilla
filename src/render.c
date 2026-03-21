@@ -13,17 +13,19 @@ void draw(
     Rect *area,
     uint32_t *image
 ) {
-    if (!area || area->y < topNavHeight) {
+    int width = layout->windowWidth;
+    if (!area || area->y < layout->topNavHeight) {
         for (int y = 0; y < layout->toolBarHeight; y++) {
             // draw toolbar (File, Edit, View, Help)
-            for (int x = 0, i = 0; x < layout->toolBarWidth; x += fonts->toolBarFont.pxFontWidth, i++) {
+            for (int x = 0, i = 0; x < layout->toolBarWidth; x += fonts->toolBarFont.pxGlyphWidth, i++) {
                 uint32_t ch = (uint32_t)(" File  Edit  View  Help "[i]) & 0xff;
-                uint8_t *image = getFontGlyphPixel(&fonts->toolBarFont, ch) + (fonts->toolBarFont.pxFontWidth * y);
-                for (int j = 0; j < fonts->toolBarFont.pxFontWidth; j++)
-                    image[x + j + width * y] = LERP(theme->textColor, theme->toolBarColor, image[j]);
+                GlyphDesc gd = *(GlyphDesc*)&ch;
+                uint8_t *image = getFontGlyph(&fonts->toolBarFont, gd) + (fonts->toolBarFont.pxGlyphWidth * y);
+                for (int j = 0; j < fonts->toolBarFont.pxGlyphWidth; j++)
+                    image[x + j + width * y] = LERP(theme->foreToolBar, theme->backToolBar, image[j]);
             }
             for (int x = layout->toolBarWidth; x < layout->windowWidth; x++) {
-                image[x + width * y] = theme->toolBarColor;
+                image[x + width * y] = theme->backToolBar;
             }
         }
         for (int y = layout->toolBarHeight; y < layout->topNavHeight; y++) {
@@ -47,7 +49,7 @@ void draw(
     }
 
     for (int y = yStart; y < yEnd; y++) {
-        if (!area || area->x < sideNavWidth) {
+        if (!area || area->x < layout->sideNavWidth) {
             for (int x = 0; x < layout->sideNavWidth; x++) {
                 // draw list of files from sideNavPanY
             }
@@ -79,31 +81,4 @@ void draw(
             // draw status
         }
     }
-}
-
-AllFontCaches initAllFonts(Freetype *ft) {
-    loadFontFaceFromFile(tf, "");
-}
-
-void closeAllFonts(AllFontCaches *fonts) {
-    closeFontFace(fonts->toolBarFont.face);
-    closeFontFace(fonts->sideNavFont.face);
-    closeFontFace(fonts->editorFont.face);
-    closeFreetype(fonts->toolBarFont.ft);
-}
-
-// 100% transparent = 0, 100% opaque = 256 (not 255)
-uint8_t *getFontGlyph(FontCache *font, GlyphDesc ch) {
-    uint32_t chUint = *(uint32_t*)&ch;
-    KeyValue32 *glyphToOffset = HashTable32_locate(&font->glyphToImageMap, chUint);
-    int imageOffset = 0;
-    if (!glyphToOffset || glyphToOffset->key != ch) {
-        imageOffset = font->atlas.size;
-        int glyphArea = font->pxGlyphWidth * font->pxGlyphHeight;
-        ByteVector_resize(offset + glyphArea);
-        uint8_t *data = &font->atlas.data[imageOffset];
-        drawGlyph(font, ch, data, font->pxGlyphWidth, font->pxGlyphHeight);
-        HashTable32_put(&font->glyphToImageMap, chUint, imageOffset);
-    }
-    return &font->atlas[imageOffset];
 }

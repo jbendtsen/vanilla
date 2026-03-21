@@ -58,7 +58,7 @@ typedef struct {
 
 typedef struct {
     Freetype *ft;
-    FTHandle_Face face;
+    FTHandle_Face *face;
     HashTable32 glyphToImageMap;
     ByteVector atlas;
     int pxGlyphWidth;
@@ -66,20 +66,30 @@ typedef struct {
 } FontCache;
 
 typedef struct {
+    FTHandle_Face codeFontFace;
+    FTHandle_Face uiFontFace;
     FontCache toolBarFont;
     FontCache sideNavFont;
     FontCache editorFont;
 } AllFontCaches;
 
 typedef struct {
-    uint32_t textColor;
+    uint32_t backToolBar;
+    uint32_t foreToolBar;
+    uint32_t backSideNav;
+    uint32_t foreSideNav;
+    uint32_t backEditor;
+    uint32_t foreEditor;
 } Theme;
 
 typedef struct {
     int windowWidth;
     int windowHeight;
+    int toolBarWidth;
+    int toolBarHeight;
     int topNavHeight;
     int topNavPanX;
+    int statusWidth;
     int statusHeight;
     int sideNavWidth;
     int sideNavPanY;
@@ -91,23 +101,31 @@ typedef struct {
 } Layout;
 
 typedef struct {
-    
+    uint16_t flags;
+    short scroll;
+    int cursorX;
+    int cursorY;
+    uint32_t key;
 } Input;
 
 typedef struct {
-    
+    uint8_t *data;
+    int size;
+    int offset;
 } FileView;
 
 typedef struct {
-    
+    int nRules;
 } Syntax;
 
 // font.c
-int initFreetype(Freetype *ft);
-int initFontFace(FontCache *font, Freetype *ft, const char *path);
+int initFreetype(Freetype *ft, int dpiX, int dpiY);
 FTHandle_Face loadFontFaceFromFile(Freetype *ft, const char *path);
 FTHandle_Face loadFontFaceFromMemory(Freetype *ft, const uint8_t *data, int size);
-void drawGlyph(FontCache *font, GlyphDesc ch, uint8_t *data, int pxGlyphWidth, int pxGlyphHeight);
+uint8_t *getFontGlyph(FontCache *font, GlyphDesc ch);
+void drawGlyph(FontCache *font, GlyphDesc ch, int imageOffset);
+int initAllFonts(AllFontCaches *fonts, Freetype *ft);
+void closeAllFonts(AllFontCaches *fonts);
 void closeFontFace(Freetype *ft, FTHandle_Face face);
 void closeFreetype(Freetype *ft);
 
@@ -122,7 +140,6 @@ void draw(
     Rect *area,
     uint32_t *image
 );
-void closeAllFonts(AllFontCaches *fonts);
 
 // util.c
 KeyValue32 *HashTable32_locate(HashTable32 *tbl, uint32_t key);
