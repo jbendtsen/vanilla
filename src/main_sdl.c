@@ -1,3 +1,4 @@
+#include "vanilla.h"
 #include <SDL2/SDL.h>
 
 #define INITIAL_WIDTH  640
@@ -25,6 +26,18 @@ int main(int argc, char **argv) {
         SDL_Log("SDL_CreateWindow() failed");
         return 1;
     }
+
+    float dpiX = 0;
+    float dpiY = 0;
+    SDL_GetDisplayDPI(0, NULL, &dpiX, &dpiY);
+
+    Freetype ft = {0};
+    if (!initFreetype(&ft, (int)dpiX, (int)dpiY)) {
+        SDL_Log("initFreetype() failed");
+        return 1;
+    }
+
+    AllFontCaches fonts = initAllFonts(&ft);
 
     int flags = SHOULD_RENDER;
     while ((flags & SHOULD_QUIT) == 0) {
@@ -74,5 +87,6 @@ int main(int argc, char **argv) {
 
     SDL_DestroyWindow(window);
     SDL_Quit();
+    closeAllFonts(&fonts);
     return 0;
 }

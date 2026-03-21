@@ -1,4 +1,5 @@
 #include "vanilla.h"
+#include <string.h>
 
 #define LERP(textColor, backColor, lum) ((((textColor) >> 8) * lum + ((backColor) >> 8) * (256 - lum)) | 0xffU);
 
@@ -80,19 +81,29 @@ void draw(
     }
 }
 
-// 100% transparent = 0, 100% opaque = 256 (not 255)
-uint8_t *getFontGlyph(FontCache *font, uint32_t ch) {
-    KeyValue32 *glyphToOffset = HashTable32_locate(&font->glyphToImageMap, c);
-    int imageOffset = 0;
-    if (!glyphToOffset || glyphToOffset->key != ch) {
-        imageOffset = renderNewGlyph(font, ch);
-        HashTable32_put(&font->glyphToImageMap, ch, imageOffset);
-    }
-    return &font->atlas[imageOffset];
+AllFontCaches initAllFonts(Freetype *ft) {
+    loadFontFaceFromFile(tf, "");
 }
 
-// With a handle to FreeType2, render this glyph to an image.
-// Then copy it as grayscale to our atlas and record the offset in the atlas back to font->glyphToImageMap
-int renderNewGlyph(FontCache *font, uint32_t ch) {
-    
+void closeAllFonts(AllFontCaches *fonts) {
+    closeFontFace(fonts->toolBarFont.face);
+    closeFontFace(fonts->sideNavFont.face);
+    closeFontFace(fonts->editorFont.face);
+    closeFreetype(fonts->toolBarFont.ft);
+}
+
+// 100% transparent = 0, 100% opaque = 256 (not 255)
+uint8_t *getFontGlyph(FontCache *font, GlyphDesc ch) {
+    uint32_t chUint = *(uint32_t*)&ch;
+    KeyValue32 *glyphToOffset = HashTable32_locate(&font->glyphToImageMap, chUint);
+    int imageOffset = 0;
+    if (!glyphToOffset || glyphToOffset->key != ch) {
+        imageOffset = font->atlas.size;
+        int glyphArea = font->pxGlyphWidth * font->pxGlyphHeight;
+        ByteVector_resize(offset + glyphArea);
+        uint8_t *data = &font->atlas.data[imageOffset];
+        drawGlyph(font, ch, data, font->pxGlyphWidth, font->pxGlyphHeight);
+        HashTable32_put(&font->glyphToImageMap, chUint, imageOffset);
+    }
+    return &font->atlas[imageOffset];
 }

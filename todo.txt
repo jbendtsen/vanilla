@@ -3,17 +3,29 @@ file.c:
 - index newlines
 - list folders
 
-util.c:
-- hashmap
-- vector
-- other random things
-
 render.c:
 - all drawing
 - handle user input while drawing
-- only source file that uses FreeType2
-
-main.c:
-- main loop
 - handle changes to layout and settings
-- only source file that uses SDL
+- use FreeType2 whenever a new glyph is needed
+
+main_sdl.c:
+- main loop
+
+Features:
+- copy/paste
+- standard selection
+- block selection
+- multiple selections
+- search/replace
+    - optionally in regex format
+    - optionally within selection
+    - within folders, recursively
+    - clicking on a word highlights all other instances of that word
+- goto line
+- macros
+    - replay key-strokes
+    - edit macro as text
+- navigation
+    - folders as tabs at the top, files as entries in the folder view on the side
+

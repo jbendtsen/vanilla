@@ -1,6 +1,7 @@
 #include "vanilla.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 // based on murmur3_32_finalize
 uint32_t hash_32_32(uint32_t h) {
@@ -93,3 +94,40 @@ int HashTable32_get(HashTable32 *tbl, uint32_t key, uint32_t *outValue) {
     }
     return 0;
 }
+
+#define IMPL_VECTOR(pref, type) \
+void pref ## Vector_resize(pref ## Vector *vec, int newSize) { \
+    if (newSize < vec->capacity) { \
+        vec->size = newSize; \
+        return; \
+    } \
+    int newCap = vec->capacity; \
+    if (newCap < 16) \
+        newCap = 16; \
+    while (newCap < newSize) \
+        newCap = ((newCap * 17) / 10) + 1; \
+    if (newCap > vec->capacity) { \
+        type *newData = (type*)malloc(newCap * sizeof(type)); \
+        if (vec->data != NULL) { \
+            memcpy(newData, vec->data, vec->size * sizeof(type)); \
+            free(vec->data); \
+        } \
+        vec->data = newData; \
+        vec->capacity = newCap; \
+    } \
+    vec->size = newSize; \
+} \
+void pref ## Vector_add(pref ## Vector *vec, type elem) { \
+    int pos = vec->size; \
+    ByteVector_resize(vec, pos + 1); \
+    vec->data[pos] = elem; \
+} \
+void pref ## Vector_extend(pref ## Vector *vec, type *data, int sz) { \
+    if (sz > 0) { \
+        int pos = vec->size; \
+        ByteVector_resize(vec, pos + sz); \
+        memcpy(&vec[pos], data, sz * sizeof(type)); \
+    } \
+}
+
+IMPL_VECTOR(Byte, uint8_t)
