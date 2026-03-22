@@ -61,12 +61,11 @@ FTHandle_Face loadFontFaceFromMemory(Freetype *ft, const uint8_t *data, int size
 	return CAST_VALUE(face, FTHandle_Face);
 }
 
-int initFontCache(FontCache *font, Freetype *ft, FTHandle_Face *faceRef, int fontHeight) {
+int initFontCache(FontCache *font, Freetype *ft, FTHandle_Face *faceRef, int fontSize) {
     *font = (FontCache) {0};
     font->ft = ft;
     font->face = faceRef;
-    font->pxGlyphWidth = fontHeight;
-    font->pxGlyphHeight = fontHeight;
+    font->size = fontSize;
 }
 
 int initAllFonts(AllFontCaches *fonts, Freetype *ft) {
@@ -75,40 +74,33 @@ int initAllFonts(AllFontCaches *fonts, Freetype *ft) {
     if (!fonts->codeFontFace.ptr || !fonts->uiFontFace.ptr)
         return 0;
 
-    initFontCache(&fonts->toolBarFont, ft, &fonts->uiFontFace, 20);
-    initFontCache(&fonts->sideNavFont, ft, &fonts->uiFontFace, 30);
-    initFontCache(&fonts->editorFont, ft, &fonts->codeFontFace, 30);
+    initFontCache(&fonts->toolBarFont, ft, &fonts->uiFontFace, 12);
+    initFontCache(&fonts->sideNavFont, ft, &fonts->uiFontFace, 16);
+    initFontCache(&fonts->editorFont, ft, &fonts->codeFontFace, 16);
     return 1;
 }
 
 // 100% transparent = 0, 100% opaque = 256 (not 255)
-uint8_t *getFontGlyph(FontCache *font, GlyphDesc ch) {
+Glyph *getFontGlyph(FontCache *font, GlyphDesc ch) {
     uint32_t chUint = *(uint32_t*)&ch;
     KeyValue32 *glyphToOffset = HashTable32_locate(&font->glyphToImageMap, chUint);
     int imageOffset = 0;
 
     if (!glyphToOffset || glyphToOffset->key != chUint) {
-        imageOffset = font->atlas.size;
+        imageOffset = drawNewGlyph(font, ch);
         HashTable32_put(&font->glyphToImageMap, chUint, imageOffset);
-
-        int glyphArea = sizeof(Glyph) + font->pxGlyphWidth * font->pxGlyphHeight;
-        ByteVector_resize(&font->atlas, imageOffset + glyphArea);
-        drawGlyph(font, ch, imageOffset);
     }
     else {
         imageOffset = glyphToOffset->value;
     }
 
-    return &font->atlas.data[imageOffset];
+    return (Glyph*)&font->atlas.data[imageOffset];
 }
 
-void drawGlyph(FontCache *font, GlyphDesc ch, int dataOffset) {
-    FT_Face face = CAST_DEREF(*font->face, FT_Face);
+int drawNewGlyph(FontCache *font, GlyphDesc ch) {
+    FT_Face face = CAST_DEREF(font->face, FT_Face);
 
-    int maxWidth = font->pxGlyphWidth;
-    int maxHeight = font->pxGlyphHeight;
-
-    FT_Set_Char_Size(face, 0, (int)(attrs->size * 64), font->ft->dpiX, font->ft->dpiY);
+    FT_Set_Char_Size(face, 0, (int)(font->size * 64), font->ft->dpiX, font->ft->dpiY);
 
     FT_Bitmap bmp;
 	FT_Glyph glyph;
@@ -118,19 +110,14 @@ void drawGlyph(FontCache *font, GlyphDesc ch, int dataOffset) {
     FT_Matrix matrix;
 
     if (ch.italic) {
-        gap = OBLIQUE_SLANT * 0.25 * attrs->size;
+        gap = OBLIQUE_SLANT * 0.25 * font->size;
         matrix = (FT_Matrix) { .xx = 0x10000, .xy = (int)(OBLIQUE_SLANT * 0x10000), .yx = 0, .yy = 0x10000 };
         FT_Set_Transform(face, &matrix, NULL);
     }
 
     if (ch.bold) {
-        FT_Stroker_Set(
-            CAST_VALUE(font->ft->stroker, FT_Stroker),
-            32,
-            FT_STROKER_LINECAP_ROUND,
-            FT_STROKER_LINEJOIN_ROUND,
-            0
-        );
+        FT_Stroker stroker = CAST_VALUE(font->ft->stroker, FT_Stroker);
+        FT_Stroker_Set(stroker, 32, FT_STROKER_LINECAP_ROUND, FT_STROKER_LINEJOIN_ROUND, 0);
 
 		FT_Load_Char(face, ch.codepoint, FT_LOAD_NO_BITMAP);
 		FT_Get_Glyph(face->glyph, &glyph);
@@ -151,29 +138,19 @@ void drawGlyph(FontCache *font, GlyphDesc ch, int dataOffset) {
 		top = face->glyph->bitmap_top;
 	}
 
-	Glyph *info = (Glyph*)&font->atlas.data[dataOffset];
+    int area = bmp.width * bmp.rows;
+    int offset = font->atlas.size;
+    ByteVector_resize(&font->atlas, offset + sizeof(Glyph) + area);
+
+	Glyph *info = (Glyph*)&font->atlas.data[offset];
 	info->imgW = bmp.width;
-    info->imgH = bmp.row;
-    info->boxW = FLOAT_FROM_16_16(face->glyph->linearHoriAdvance) + gap,
+    info->imgH = bmp.rows;
+    info->boxW = FLOAT_FROM_16_16(face->glyph->linearHoriAdvance) + gap;
     info->boxH = FLOAT_FROM_16_16(face->glyph->linearVertAdvance);
-    info->left  = left;
-    info->top   = top;
+    info->offX = left;
+    info->offY = -top;
 
-    for (int i = 0; i < gl->img_w * gl->img_h; i++) {
-        float lum = (float)bmp.buffer[i] / 255.0;
-    }
-
-    XPutImage(
-		display, draw_ctx->window, draw_ctx->gc, (XImage*)&glyphs[idx].ximage,
-		0, 0,
-		x + glyphs[idx].left, y - glyphs[idx].top,
-		glyphs[idx].img_w, glyphs[idx].img_h
-	);
-
-    #define FONT_WIDTH(glyph) (int)(glyph.box_w + 0.5)
-    #define FONT_HEIGHT(glyph) (int)(glyph.box_h + 0.5)
-
-    x += FONT_WIDTH(glyphs[0]);
+    memcpy(&info[1], bmp.buffer, area);
 
 	if (ch.bold)
 		FT_Done_Glyph(glyph);

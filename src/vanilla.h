@@ -45,6 +45,16 @@ typedef struct {
     uint32_t codepoint : 29;
 } GlyphDesc;
 
+typedef struct {
+    GlyphDesc ch;
+    int imgW;
+    int imgH;
+    int boxW;
+    int boxH;
+    int offX;
+    int offY;
+} Glyph;
+
 typedef struct { void *ptr; } FTHandle_Library;
 typedef struct { void *ptr; } FTHandle_Stroker;
 typedef struct { void *ptr; } FTHandle_Face;
@@ -61,8 +71,7 @@ typedef struct {
     FTHandle_Face *face;
     HashTable32 glyphToImageMap;
     ByteVector atlas;
-    int pxGlyphWidth;
-    int pxGlyphHeight;
+    int size;
 } FontCache;
 
 typedef struct {
@@ -122,8 +131,8 @@ typedef struct {
 int initFreetype(Freetype *ft, int dpiX, int dpiY);
 FTHandle_Face loadFontFaceFromFile(Freetype *ft, const char *path);
 FTHandle_Face loadFontFaceFromMemory(Freetype *ft, const uint8_t *data, int size);
-uint8_t *getFontGlyph(FontCache *font, GlyphDesc ch);
-void drawGlyph(FontCache *font, GlyphDesc ch, int imageOffset);
+Glyph *getFontGlyph(FontCache *font, GlyphDesc ch);
+int drawNewGlyph(FontCache *font, GlyphDesc ch);
 int initAllFonts(AllFontCaches *fonts, Freetype *ft);
 void closeAllFonts(AllFontCaches *fonts);
 void closeFontFace(Freetype *ft, FTHandle_Face face);
