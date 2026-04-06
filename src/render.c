@@ -50,8 +50,10 @@ void draw(
 
     //log_info("xStart: %d, xEnd: %d, yStart: %d, yEnd: %d\n", xStart, xEnd, yStart, yEnd);
 
-    int chH = fonts->editorFont.size;
-    int chW = ((chH * 9) / 16) + 1;
+    int chH = (fonts->editorFont.size * 5) / 4;
+    int chW = (fonts->editorFont.size * 5) / 8;
+
+    int lineStart = 0;
 
     // minus 1 to avoid an X11 bug
     for (int y = yStart; y < yEnd - 1; y++) {
@@ -63,26 +65,54 @@ void draw(
             }
         }
         */
+        int idx = lineStart;
+        int foundNl = 0;
         int row = (y - yStart) / chH;
         int chY = (y - yStart) % chH;
+
         for (int x = xStart; x < xEnd; x += chW) {
-            int col = (x - xStart) / chW;
-            int chX = (x - xStart) % chW;
-            uint32_t codepoint = 'a';
-            GlyphDesc gd = *(GlyphDesc*)&codepoint;
-            Glyph *glyph = getFontGlyph(&fonts->toolBarFont, gd);
-            /*
-            log_info("ch: %u, imgW: %d, imgH: %d, boxW: %d, boxH: %d, offX: %d, offY: %d",
-                glyph->ch, glyph->imgW, glyph->imgH, glyph->boxW, glyph->boxH, glyph->offX, glyph->offY);
-            */
-            uint8_t *gimg = (uint8_t*)&glyph[1];
-            for (int j = 0; j < chW; j++) {
-                int gx = j + glyph->offX;
-                int gy = chY + glyph->offY;
-                uint8_t lum = (gx < 0 || gx >= glyph->imgW || gy < 0 || gy >= glyph->imgH) ? 0 : gimg[gx + glyph->imgW * gy];
-                image[x + j + width * y] = LERP(theme->foreEditor, theme->backEditor, lum);
+            if (idx >= file->size || file->buf[idx] == '\n')
+                foundNl = 1;
+
+            if (!foundNl && idx < file->size) {
+                //int col = (x - xStart) / chW;
+                //int chX = (x - xStart) % chW;
+                uint32_t codepoint = (uint32_t)file->buf[idx];
+                GlyphDesc gd = *(GlyphDesc*)&codepoint;
+                Glyph *glyph = getFontGlyph(&fonts->toolBarFont, gd);
+                /*
+                log_info("ch: %u, imgW: %d, imgH: %d, boxW: %d, boxH: %d, offX: %d, offY: %d",
+                    glyph->ch, glyph->imgW, glyph->imgH, glyph->boxW, glyph->boxH, glyph->offX, glyph->offY);
+                */
+                uint8_t *gimg = (uint8_t*)&glyph[1];
+                for (int j = 0; j < chW; j++) {
+                    int gx = j - glyph->offX;
+                    int gy = chY - chH + glyph->offY;
+                    uint8_t lum = (gx < 0 || gx >= glyph->imgW || gy < 0 || gy >= glyph->imgH) ? 0 : gimg[gx + glyph->imgW * gy];
+                    image[x + j + width * y] = LERP(theme->foreEditor, theme->backEditor, lum);
+                }
+                idx++;
+            } else {
+                for (int j = 0; j < xEnd - x; j++) {
+                    image[x + j + width * y] = theme->backEditor;
+                }
+                x = xEnd;
             }
         }
+
+        if (chY == chH - 1) {
+            if (foundNl) {
+                lineStart = idx + 1;
+            } else {
+                for (int i = idx; i < file->size; i++) {
+                    if (file->buf[i] == '\n') {
+                        lineStart = i + 1;
+                        break;
+                    }
+                }
+            }
+        }
+
         /*
         if (y >= layout->scrollY && y < layout->scrollY + layout->scrollHeight) {
             for (int x = layout->windowWidth - layout->scrollWidth; x < layout->windowWidth; x++) {

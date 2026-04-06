@@ -94,6 +94,8 @@ Glyph *getFontGlyph(FontCache *font, GlyphDesc ch) {
         imageOffset = glyphToOffset->value;
     }
 
+    log_info("glyphToOffset: %p, imageOffset: %d", glyphToOffset, imageOffset);
+
     return (Glyph*)&font->atlas.data[imageOffset];
 }
 
@@ -140,7 +142,8 @@ int drawNewGlyph(FontCache *font, GlyphDesc ch) {
 
     int area = bmp.width * bmp.rows;
     int offset = font->atlas.size;
-    ByteVector_resize(&font->atlas, offset + sizeof(Glyph) + area);
+    int newSize = (offset + sizeof(Glyph) + area + 3) & ~3;
+    ByteVector_resize(&font->atlas, newSize);
 
 	Glyph *info = (Glyph*)&font->atlas.data[offset];
 	info->ch = ch;
@@ -149,7 +152,7 @@ int drawNewGlyph(FontCache *font, GlyphDesc ch) {
     info->boxW = FLOAT_FROM_16_16(face->glyph->linearHoriAdvance) + gap;
     info->boxH = FLOAT_FROM_16_16(face->glyph->linearVertAdvance);
     info->offX = left;
-    info->offY = -top;
+    info->offY = top;
 
     memcpy(&info[1], bmp.buffer, area);
 
@@ -158,6 +161,8 @@ int drawNewGlyph(FontCache *font, GlyphDesc ch) {
 
     if (ch.italic)
         FT_Set_Transform(face, NULL, NULL);
+
+    return offset;
 }
 
 void closeFontFace(Freetype *ft, FTHandle_Face face) {

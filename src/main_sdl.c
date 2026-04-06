@@ -52,6 +52,8 @@ int main(int argc, char **argv) {
     theme.backEditor = 0xffffff;
     theme.foreEditor = 0x000000;
 
+    loadFile(&file, "src/main_sdl.c");
+
     int counter = 0;
 
     int flags = SHOULD_RENDER;

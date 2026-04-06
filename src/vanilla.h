@@ -118,7 +118,7 @@ typedef struct {
 } Input;
 
 typedef struct {
-    uint8_t *data;
+    uint8_t *buf;
     int size;
     int offset;
 } FileView;
@@ -128,6 +128,9 @@ typedef struct {
 } Syntax;
 
 void log_info(const char *fmt, ...);
+
+// file.c
+int loadFile(FileView *file, const char *path);
 
 // font.c
 int initFreetype(Freetype *ft, int dpiX, int dpiY);
