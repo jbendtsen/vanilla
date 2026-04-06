@@ -14,6 +14,9 @@ uint32_t hash_32_32(uint32_t h) {
 }
 
 KeyValue32 *HashTable32_locate(HashTable32 *tbl, uint32_t key) {
+    if (!tbl->pairs)
+        return NULL;
+
     uint32_t hash = hash_32_32(key);
     int shift = tbl->sizeLog2;
     int idx = (int)(hash & ((1U << shift) - 1));
@@ -42,12 +45,11 @@ void HashTable32_rebalance(HashTable32 *tbl, KeyValue32 *pair) {
     int newCap = tbl->capacity;
     if (newCap < 16)
         newCap = 16;
+    //log_info("tbl->pairs: %p, tbl->occupied: %d, newLog2: %d, newCap: %d\n", tbl->pairs, tbl->occupied, newLog2, newCap);
     while (newCap < (1 << newLog2))
         newCap = ((newCap * 17) / 10) + 1;
 
     int oldSize = 1 << tbl->sizeLog2;
-    tbl->sizeLog2 = newLog2;
-    tbl->capacity = newCap;
 
     if (newCap > tbl->capacity) {
         KeyValue32 *oldPairs = tbl->pairs;
@@ -65,6 +67,9 @@ void HashTable32_rebalance(HashTable32 *tbl, KeyValue32 *pair) {
             free(oldPairs);
         }
     }
+
+    tbl->sizeLog2 = newLog2;
+    tbl->capacity = newCap;
 }
 
 uint32_t HashTable32_put(HashTable32 *tbl, uint32_t key, uint32_t value) {

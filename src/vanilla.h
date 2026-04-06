@@ -127,6 +127,8 @@ typedef struct {
     int nRules;
 } Syntax;
 
+void log_info(const char *fmt, ...);
+
 // font.c
 int initFreetype(Freetype *ft, int dpiX, int dpiY);
 FTHandle_Face loadFontFaceFromFile(Freetype *ft, const char *path);

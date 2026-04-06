@@ -14,15 +14,11 @@ void draw(
     uint32_t *image
 ) {
     int width = layout->windowWidth;
+    /*
     if (!area || area->y < layout->topNavHeight) {
         for (int y = 0; y < layout->toolBarHeight; y++) {
-            // draw toolbar (File, Edit, View, Help)
-            for (int x = 0, i = 0; x < layout->toolBarWidth; x += fonts->toolBarFont.pxGlyphWidth, i++) {
-                uint32_t ch = (uint32_t)(" File  Edit  View  Help "[i]) & 0xff;
-                GlyphDesc gd = *(GlyphDesc*)&ch;
-                uint8_t *image = getFontGlyph(&fonts->toolBarFont, gd) + (fonts->toolBarFont.pxGlyphWidth * y);
-                for (int j = 0; j < fonts->toolBarFont.pxGlyphWidth; j++)
-                    image[x + j + width * y] = LERP(theme->foreToolBar, theme->backToolBar, image[j]);
+            for (int x = 0; x < layout->toolBarWidth; x++) {
+                // draw toolbar (File, Edit, View, Help)
             }
             for (int x = layout->toolBarWidth; x < layout->windowWidth; x++) {
                 image[x + width * y] = theme->backToolBar;
@@ -32,6 +28,7 @@ void draw(
             // draw list of folders from topNavPanX
         }
     }
+    */
 
     int xStart = layout->sideNavWidth;
     int xEnd = layout->windowWidth;
@@ -48,15 +45,42 @@ void draw(
             yEnd = area->y + area->h;
     }
 
-    for (int y = yStart; y < yEnd; y++) {
+    log_info("xStart: %d, xEnd: %d, yStart: %d, yEnd: %d\n", xStart, xEnd, yStart, yEnd);
+
+    int chW = 16;
+    int chH = 32;
+
+    // minus 1 to avoid an X11 bug
+    for (int y = yStart; y < yEnd - 1; y++) {
+        /*
+        log_info("y: %d", y);
         if (!area || area->x < layout->sideNavWidth) {
             for (int x = 0; x < layout->sideNavWidth; x++) {
                 // draw list of files from sideNavPanY
             }
         }
-        for (int x = xStart; x < xEnd; x++) {
-            // draw file text
+        */
+        int row = (y - yStart) / chH;
+        int chY = (y - yStart) % chH;
+        for (int x = xStart; x < xEnd; x += chW) {
+            int col = (x - xStart) / chW;
+            int chX = (x - xStart) % chW;
+            uint32_t codepoint = 'a';
+            GlyphDesc gd = *(GlyphDesc*)&codepoint;
+            Glyph *glyph = getFontGlyph(&fonts->toolBarFont, gd);
+            /*
+            log_info("ch: %u, imgW: %d, imgH: %d, boxW: %d, boxH: %d, offX: %d, offY: %d",
+                glyph->ch, glyph->imgW, glyph->imgH, glyph->boxW, glyph->boxH, glyph->offX, glyph->offY);
+            */
+            uint8_t *gimg = (uint8_t*)&glyph[1];
+            for (int j = 0; j < chW; j++) {
+                int gx = j + glyph->offX;
+                int gy = chY + glyph->offY;
+                uint8_t lum = (gx < 0 || gx >= glyph->imgW || gy < 0 || gy >= glyph->imgH) ? 0 : gimg[gx + glyph->imgW * gy];
+                image[x + j + width * y] = LERP(theme->foreEditor, theme->backEditor, lum);
+            }
         }
+        /*
         if (y >= layout->scrollY && y < layout->scrollY + layout->scrollHeight) {
             for (int x = layout->windowWidth - layout->scrollWidth; x < layout->windowWidth; x++) {
                 
@@ -67,11 +91,13 @@ void draw(
                 
             }
         }
+        */
     }
 
     // ALWAYS draw status. Even if it would be excluded, still draw the status area anyway.
     // TODO: maybe check if the status didn't change as well, then skip if it's also outside the invalidation area
 
+    /*
     int statusX = 0;
     if (area && area->y + area->h < layout->windowHeight - layout->statusHeight)
         statusX = layout->windowWidth - layout->statusWidth;
@@ -81,4 +107,5 @@ void draw(
             // draw status
         }
     }
+    */
 }

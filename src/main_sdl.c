@@ -1,5 +1,5 @@
 #include "vanilla.h"
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #define INITIAL_WIDTH  640
 #define INITIAL_HEIGHT 480
@@ -8,16 +8,13 @@
 #define SHOULD_RENDER  2
 
 int main(int argc, char **argv) {
-    int res = SDL_Init(SDL_INIT_VIDEO);
-    if (res != 0) {
-        SDL_Log("SDL_Init() failed (%d)", res);
+    if (!SDL_Init(SDL_INIT_EVENTS | SDL_INIT_VIDEO)) {
+        SDL_Log("SDL_Init() failed: %s", SDL_GetError());
         return 1;
     }
 
     SDL_Window *window = SDL_CreateWindow(
         "Vanilla",
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
         INITIAL_WIDTH,
         INITIAL_HEIGHT,
         SDL_WINDOW_RESIZABLE
@@ -27,9 +24,12 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    float dpiX = 0;
-    float dpiY = 0;
-    SDL_GetDisplayDPI(0, NULL, &dpiX, &dpiY);
+    float dsScale = SDL_GetWindowDisplayScale(window);
+    float dpiX = 96.0 * dsScale;
+    float dpiY = 96.0 * dsScale;
+
+    int sW, sH;
+    SDL_GetWindowSize(window, &sW, &sH);
 
     Freetype ft = {0};
     if (!initFreetype(&ft, (int)dpiX, (int)dpiY)) {
@@ -49,6 +49,8 @@ int main(int argc, char **argv) {
     Layout layout = {0};
     Theme theme = {0};
 
+    int counter = 0;
+
     int flags = SHOULD_RENDER;
     while ((flags & SHOULD_QUIT) == 0) {
         // TODO: some logic here to set SHOULD_RENDER if something else changed
@@ -65,13 +67,20 @@ int main(int argc, char **argv) {
                 }
             }
             switch (event.type) {
-            case SDL_QUIT:
+            case SDL_EVENT_QUIT:
                 flags |= SHOULD_QUIT;
                 break;
-            case SDL_MOUSEMOTION:
-            case SDL_MOUSEBUTTONDOWN:
-            case SDL_MOUSEBUTTONUP:
-            case SDL_KEYDOWN:
+            case SDL_EVENT_WINDOW_RESIZED:
+                log_info("RESIZE!!!");
+                sW = event.window.data1;
+                sH = event.window.data2;
+                SDL_UpdateWindowSurface(window);
+                // don't break here
+            //case SDL_EVENT_MOUSE_MOTION:
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+            case SDL_EVENT_KEY_DOWN:
+            case SDL_EVENT_KEY_UP:
                 flags |= SHOULD_RENDER;
                 break;
             }
@@ -79,8 +88,6 @@ int main(int argc, char **argv) {
         if ((flags & SHOULD_RENDER) == 0 || (flags & SHOULD_QUIT))
             continue;
 
-        int sW, sH;
-        SDL_GetWindowSize(window, &sW, &sH);
         SDL_Surface *surface = SDL_GetWindowSurface(window);
         SDL_LockSurface(surface);
 
@@ -103,10 +110,18 @@ int main(int argc, char **argv) {
         SDL_UpdateWindowSurface(window);
 
         flags = 0;
+        counter++;
     }
 
     SDL_DestroyWindow(window);
     SDL_Quit();
     closeAllFonts(&fonts);
     return 0;
+}
+
+void log_info(const char *fmt, ...) {
+    va_list args;
+    va_start(args);
+    SDL_LogMessageV(0, SDL_LOG_PRIORITY_INFO, fmt, args);
+    va_end(args);
 }

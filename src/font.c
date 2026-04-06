@@ -143,6 +143,7 @@ int drawNewGlyph(FontCache *font, GlyphDesc ch) {
     ByteVector_resize(&font->atlas, offset + sizeof(Glyph) + area);
 
 	Glyph *info = (Glyph*)&font->atlas.data[offset];
+	info->ch = ch;
 	info->imgW = bmp.width;
     info->imgH = bmp.rows;
     info->boxW = FLOAT_FROM_16_16(face->glyph->linearHoriAdvance) + gap;
