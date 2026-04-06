@@ -49,6 +49,9 @@ int main(int argc, char **argv) {
     Layout layout = {0};
     Theme theme = {0};
 
+    theme.backEditor = 0xffffff;
+    theme.foreEditor = 0x000000;
+
     int counter = 0;
 
     int flags = SHOULD_RENDER;
@@ -71,7 +74,6 @@ int main(int argc, char **argv) {
                 flags |= SHOULD_QUIT;
                 break;
             case SDL_EVENT_WINDOW_RESIZED:
-                log_info("RESIZE!!!");
                 sW = event.window.data1;
                 sH = event.window.data2;
                 SDL_UpdateWindowSurface(window);

@@ -74,9 +74,9 @@ int initAllFonts(AllFontCaches *fonts, Freetype *ft) {
     if (!fonts->codeFontFace.ptr || !fonts->uiFontFace.ptr)
         return 0;
 
-    initFontCache(&fonts->toolBarFont, ft, &fonts->uiFontFace, 12);
-    initFontCache(&fonts->sideNavFont, ft, &fonts->uiFontFace, 16);
-    initFontCache(&fonts->editorFont, ft, &fonts->codeFontFace, 16);
+    initFontCache(&fonts->toolBarFont, ft, &fonts->uiFontFace, 30);
+    initFontCache(&fonts->sideNavFont, ft, &fonts->uiFontFace, 40);
+    initFontCache(&fonts->editorFont, ft, &fonts->codeFontFace, 40);
     return 1;
 }
 

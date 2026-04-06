@@ -39,10 +39,10 @@ typedef struct {
 } Point;
 
 typedef struct {
-    uint32_t bold : 1;
-    uint32_t italic : 1;
-    uint32_t underline : 1;
     uint32_t codepoint : 29;
+    uint32_t underline : 1;
+    uint32_t italic : 1;
+    uint32_t bold : 1;
 } GlyphDesc;
 
 typedef struct {

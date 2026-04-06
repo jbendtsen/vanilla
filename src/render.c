@@ -1,7 +1,10 @@
 #include "vanilla.h"
 #include <string.h>
 
-#define LERP(textColor, backColor, lum) ((((textColor) >> 8) * lum + ((backColor) >> 8) * (256 - lum)) | 0xffU);
+#define LERP(textColor, backColor, lum) \
+    (((textColor & 0xff) * lum + (backColor & 0xff) * (255 - lum)) >> 8) | \
+    (((((textColor >>  8) & 0xff) * lum + ((backColor >>  8) & 0xff) * (255 - lum)) >> 8) <<  8) | \
+    (((((textColor >> 16) & 0xff) * lum + ((backColor >> 16) & 0xff) * (255 - lum)) >> 8) << 16)
 
 void draw(
     Input *input,
@@ -45,10 +48,10 @@ void draw(
             yEnd = area->y + area->h;
     }
 
-    log_info("xStart: %d, xEnd: %d, yStart: %d, yEnd: %d\n", xStart, xEnd, yStart, yEnd);
+    //log_info("xStart: %d, xEnd: %d, yStart: %d, yEnd: %d\n", xStart, xEnd, yStart, yEnd);
 
-    int chW = 16;
-    int chH = 32;
+    int chH = fonts->editorFont.size;
+    int chW = ((chH * 9) / 16) + 1;
 
     // minus 1 to avoid an X11 bug
     for (int y = yStart; y < yEnd - 1; y++) {
