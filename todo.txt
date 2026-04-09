@@ -1,3 +1,27 @@
+Features:
+- copy/paste
+- standard selection
+- block selection
+- multiple selections
+    - swap contents between selections
+- search/replace
+    - optionally in regex format
+    - optionally within selection
+    - within folders, recursively
+    - clicking on a word highlights all other instances of that word
+- goto line
+- macros
+    - replay key-strokes
+    - edit macro as text
+- pipe text buffer into a program through stdin (and optionally back to the editor through stdout)
+    - e.g. awk, grep, etc. for discovering things about the text
+    - e.g. sed, cut, etc. for editing the text buffer itself (undo available)
+- navigation
+    - folders as tabs at the top, files as entries in the folder view on the side
+- preferences
+    - font size, horizontal spacing, vertical spacing
+    - line wrap
+
 file.c:
 - load/save files
 - index newlines
@@ -11,21 +35,3 @@ render.c:
 
 main_sdl.c:
 - main loop
-
-Features:
-- copy/paste
-- standard selection
-- block selection
-- multiple selections
-- search/replace
-    - optionally in regex format
-    - optionally within selection
-    - within folders, recursively
-    - clicking on a word highlights all other instances of that word
-- goto line
-- macros
-    - replay key-strokes
-    - edit macro as text
-- navigation
-    - folders as tabs at the top, files as entries in the folder view on the side
-

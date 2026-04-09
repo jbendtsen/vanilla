@@ -94,8 +94,6 @@ Glyph *getFontGlyph(FontCache *font, GlyphDesc ch) {
         imageOffset = glyphToOffset->value;
     }
 
-    log_info("glyphToOffset: %p, imageOffset: %d", glyphToOffset, imageOffset);
-
     return (Glyph*)&font->atlas.data[imageOffset];
 }
 

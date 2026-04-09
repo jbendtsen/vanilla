@@ -50,7 +50,7 @@ void draw(
 
     //log_info("xStart: %d, xEnd: %d, yStart: %d, yEnd: %d\n", xStart, xEnd, yStart, yEnd);
 
-    int chH = (fonts->editorFont.size * 5) / 4;
+    int chH = (fonts->editorFont.size * 8) / 5;
     int chW = (fonts->editorFont.size * 5) / 8;
 
     int lineStart = 0;
@@ -79,15 +79,15 @@ void draw(
                 //int chX = (x - xStart) % chW;
                 uint32_t codepoint = (uint32_t)file->buf[idx];
                 GlyphDesc gd = *(GlyphDesc*)&codepoint;
-                Glyph *glyph = getFontGlyph(&fonts->toolBarFont, gd);
+                Glyph *glyph = getFontGlyph(&fonts->editorFont, gd);
                 /*
-                log_info("ch: %u, imgW: %d, imgH: %d, boxW: %d, boxH: %d, offX: %d, offY: %d",
-                    glyph->ch, glyph->imgW, glyph->imgH, glyph->boxW, glyph->boxH, glyph->offX, glyph->offY);
+                log_info("ch: %u, chW: %d, chH: %d, imgW: %d, imgH: %d, boxW: %d, boxH: %d, offX: %d, offY: %d",
+                    glyph->ch, chW, chH, glyph->imgW, glyph->imgH, glyph->boxW, glyph->boxH, glyph->offX, glyph->offY);
                 */
                 uint8_t *gimg = (uint8_t*)&glyph[1];
                 for (int j = 0; j < chW; j++) {
-                    int gx = j - glyph->offX;
-                    int gy = chY - chH + glyph->offY;
+                    int gx = j - glyph->offX; // - (chW - glyph->boxW) / 2;
+                    int gy = chY - glyph->boxH + glyph->offY;
                     uint8_t lum = (gx < 0 || gx >= glyph->imgW || gy < 0 || gy >= glyph->imgH) ? 0 : gimg[gx + glyph->imgW * gy];
                     image[x + j + width * y] = LERP(theme->foreEditor, theme->backEditor, lum);
                 }
