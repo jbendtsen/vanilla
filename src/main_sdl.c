@@ -61,6 +61,9 @@ int main(int argc, char **argv) {
         // TODO: some logic here to set SHOULD_RENDER if something else changed
         //       e.g. new file or menu opened
 
+        input.scrollX = 0;
+        input.scrollY = 0;
+
         SDL_Event event = {0};
         while ((flags & SHOULD_QUIT) == 0) {
             if (!SDL_PollEvent(&event)) {
@@ -75,11 +78,21 @@ int main(int argc, char **argv) {
             case SDL_EVENT_QUIT:
                 flags |= SHOULD_QUIT;
                 break;
+
             case SDL_EVENT_WINDOW_RESIZED:
                 sW = event.window.data1;
                 sH = event.window.data2;
                 SDL_UpdateWindowSurface(window);
-                // don't break here
+                flags |= SHOULD_RENDER;
+                break;
+
+            case SDL_EVENT_MOUSE_WHEEL:
+                input.scrollX = -event.wheel.x * 100;
+                input.scrollY = -event.wheel.y * 100;
+                //log_info("wheel | x: %g, y: %g", event.wheel.x, event.wheel.y);
+                flags |= SHOULD_RENDER;
+                break;
+
             //case SDL_EVENT_MOUSE_MOTION:
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
             case SDL_EVENT_MOUSE_BUTTON_UP:

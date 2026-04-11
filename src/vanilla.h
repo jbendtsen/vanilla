@@ -92,6 +92,15 @@ typedef struct {
 } Theme;
 
 typedef struct {
+    uint8_t *buf;
+    int size;
+    int cursor;
+    int viewStart;
+    int panX;
+    int panY;
+} FileView;
+
+typedef struct {
     int windowWidth;
     int windowHeight;
     int toolBarWidth;
@@ -102,26 +111,16 @@ typedef struct {
     int statusHeight;
     int sideNavWidth;
     int sideNavPanY;
-    int panX;
-    int panY;
-    int scrollY;
-    int scrollWidth;
-    int scrollHeight;
 } Layout;
 
 typedef struct {
     uint16_t flags;
-    short scroll;
+    int scrollX;
+    int scrollY;
     int cursorX;
     int cursorY;
     uint32_t key;
 } Input;
-
-typedef struct {
-    uint8_t *buf;
-    int size;
-    int offset;
-} FileView;
 
 typedef struct {
     int nRules;

@@ -53,7 +53,30 @@ void draw(
     int chH = (fonts->editorFont.size * 8) / 5;
     int chW = (fonts->editorFont.size * 5) / 8;
 
-    int lineStart = 0;
+    int prevLine = file->panY / chH;
+    file->panX += input->scrollX;
+    file->panY += input->scrollY;
+    int curLine = file->panY / chH;
+
+    int lineStart = file->viewStart;
+    for (int i = 0; i < curLine - prevLine; i++) {
+        while (lineStart < file->size && file->buf[lineStart] != '\n')
+            lineStart++;
+        lineStart++;
+    }
+    for (int i = 0; i < prevLine - curLine; i++) {
+        lineStart -= 2;
+        while (lineStart >= 0 && file->buf[lineStart] != '\n')
+            lineStart--;
+        if (lineStart < 0)
+            lineStart = 0;
+        else
+            lineStart++;
+    }
+    file->viewStart = lineStart;
+
+    int panChX = file->panX % chW;
+    int panChY = file->panY % chH;
 
     // minus 1 to avoid an X11 bug
     for (int y = yStart; y < yEnd - 1; y++) {
@@ -67,8 +90,8 @@ void draw(
         */
         int idx = lineStart;
         int foundNl = 0;
-        int row = (y - yStart) / chH;
-        int chY = (y - yStart) % chH;
+        int row = (y - yStart + panChY) / chH;
+        int chY = (y - yStart + panChY) % chH;
 
         for (int x = xStart; x < xEnd; x += chW) {
             if (idx >= file->size || file->buf[idx] == '\n')
